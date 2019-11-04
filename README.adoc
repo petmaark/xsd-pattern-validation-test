@@ -1,0 +1,105 @@
+= XSD pattern validation example
+
+== Overview
+
+This POC demonstrates that during JAXB unmarshalling invalid input can slow down the validation process if there is a regex pattern defined on the input.
+
+== Running
+
+==== Prerequisite
+
+* java 8+
+* maven
+
+==== Compile and run
+
+* Run `mvn clean install` in `xsd-pattern-validation-test` root directory
+* Run `jar xsd-pattern-validation-test-application/target/xsd-pattern-validation-test-application-1.0.0-SNAPSHOT.jar` from project root directory
+
+== Components
+
+=== xsd
+
+`xsd/hu/icellmobilsoft/pattern/validation/test/dto/test.xsd`:
+
+[xml]
+----
+    <xs:simpleType name="SimpleText255NotBlankType">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">String of maximum 255 characters</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="255"/>
+            <xs:pattern value=".*[^\s].*"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="NotBlankDataType">
+        <xs:sequence>
+            <xs:element name="notBlank" type="SimpleText255NotBlankType" minOccurs="0"></xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="NotBlankElement">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="NotBlankDataType"/>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+----
+
+As seen the `SimpleText255NotBlankType` has pattern, minLength, maxLength restrictions defined.
+
+=== main
+
+`MainApplication` unmarshalls `test.xml` and `aaa.xml` files and validates them against the `test.xsd`.
+
+`test.xml` is valid, it gets unmarshalled successfully very quickly.
+
+In `aaa.xml` the `notBlank` tag-s value conforms to the specified regex, but has a length of ca. 1 000 000 charachters, therefore the xml is invalid.
+During the unmarshalling process the value could be determined invalid quickly because the length exceeds the maxLength defined in the xsd (1000000 vs 250), but the unmarshalling takes long, possibly the value is validated against the regex pattern, which could be slow because of the charachter length.
+
+== Example
+
+=== log
+
+----
+[user@user-pc xsd-pattern-validation-test]$ jar xsd-pattern-validation-test-application/target/xsd-pattern-validation-test-application-1.0.0-SNAPSHOT.jar
+Unmarshalling...
+Unmarshall finished.
+hu.icellmobilsoft.pattern.validation.test.dto.NotBlankElement@489115ef
+Time elapsed: 9 ms
+Unmarshalling...
+Unmarshall failed.
+javax.xml.bind.UnmarshalException
+ - with linked exception:
+[org.xml.sax.SAXParseException; lineNumber: 3; columnNumber: 1048636; cvc-maxLength-valid: Value 'KORLÄÂĂÂ...ĂÂÄÂĂÂG' with length = '1048602' is not facet-valid with respect to maxLength '255' for type 'SimpleText255NotBlankType'.
+        at java.xml/com.sun.org.apache.xerces.internal.util.ErrorHandlerWrapper.createSAXParseException(ErrorHandlerWrapper.java:204)
+        at java.xml/com.sun.org.apache.xerces.internal.util.ErrorHandlerWrapper.error(ErrorHandlerWrapper.java:135)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.XMLErrorReporter.reportError(XMLErrorReporter.java:396)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.XMLErrorReporter.reportError(XMLErrorReporter.java:327)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.XMLErrorReporter.reportError(XMLErrorReporter.java:284)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.xs.XMLSchemaValidator$XSIErrorReporter.reportError(XMLSchemaValidator.java:511)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.xs.XMLSchemaValidator.reportSchemaError(XMLSchemaValidator.java:3587)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.xs.XMLSchemaValidator.elementLocallyValidType(XMLSchemaValidator.java:3424)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.xs.XMLSchemaValidator.processElementContent(XMLSchemaValidator.java:3334)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.xs.XMLSchemaValidator.handleEndElement(XMLSchemaValidator.java:2372)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.xs.XMLSchemaValidator.endElement(XMLSchemaValidator.java:943)
+        at java.xml/com.sun.org.apache.xerces.internal.jaxp.validation.ValidatorHandlerImpl.endElement(ValidatorHandlerImpl.java:584)
+        at com.sun.xml.bind.v2.runtime.unmarshaller.ValidatingUnmarshaller.endElement(ValidatingUnmarshaller.java:106)
+        at com.sun.xml.bind.v2.runtime.unmarshaller.SAXConnector.endElement(SAXConnector.java:180)
+        at java.xml/com.sun.org.apache.xerces.internal.parsers.AbstractSAXParser.endElement(AbstractSAXParser.java:610)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.XMLDocumentFragmentScannerImpl.scanEndElement(XMLDocumentFragmentScannerImpl.java:1718)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.XMLDocumentFragmentScannerImpl$FragmentContentDriver.next(XMLDocumentFragmentScannerImpl.java:2883)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.XMLDocumentScannerImpl.next(XMLDocumentScannerImpl.java:605)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.XMLNSDocumentScannerImpl.next(XMLNSDocumentScannerImpl.java:112)
+        at java.xml/com.sun.org.apache.xerces.internal.impl.XMLDocumentFragmentScannerImpl.scanDocument(XMLDocumentFragmentScannerImpl.java:534)
+        at java.xml/com.sun.org.apache.xerces.internal.parsers.XML11Configuration.parse(XML11Configuration.java:888)
+        at java.xml/com.sun.org.apache.xerces.internal.parsers.XML11Configuration.parse(XML11Configuration.java:824)
+        at java.xml/com.sun.org.apache.xerces.internal.parsers.XMLParser.parse(XMLParser.java:141)
+        at java.xml/com.sun.org.apache.xerces.internal.parsers.AbstractSAXParser.parse(AbstractSAXParser.java:1216)
+        at java.xml/com.sun.org.apache.xerces.internal.jaxp.SAXParserImpl$JAXPSAXParser.parse(SAXParserImpl.java:635)
+        at com.sun.xml.bind.v2.runtime.unmarshaller.UnmarshallerImpl.unmarshal0(UnmarshallerImpl.java:258)
+        ... 5 more
+Time elapsed: 151,806 ms
+----

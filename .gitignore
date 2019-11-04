@@ -1,0 +1,11 @@
+.idea
+*.iml
+.settings/
+.project
+.classpath
+target/
+bin/
+log/
+project-ex.yml
+*.log
+test-output/
