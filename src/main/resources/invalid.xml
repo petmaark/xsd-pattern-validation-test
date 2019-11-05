@@ -1,0 +1,4 @@
+<data:NotBlankElement xmlns:data="http://icellmobilsoft.hu/pattern/validation/test/dto">
+  <!--Optional:-->
+  <data:notBlank> </data:notBlank>
+</data:NotBlankElement>
