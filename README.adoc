@@ -78,9 +78,15 @@ This xsd also defines `SimpleText255NotBlankType` which restricts `SimpleText255
 
 The project contains 3 xml files for testing:
 
-* `valid.xml` - valid by both xsd-s
-* `invalid.xml` - contains an empty string as value in the `notBlank` tag.
-* `long_string.xml` - contains a long (ca. 1 000 000 chars) string as value in the `notBlank` tag.
+* `valid.xml`
++
+valid by both xsd-s
+* `invalid.xml`
++
+contains an empty string as value in the `notBlank` tag.
+* `long_string.xml`
++
+contains a long (ca. 1 000 000 chars) string as value in the `notBlank` tag.
 
 == Running
 
@@ -107,6 +113,10 @@ A possible workaorund for the problem is shown in the `workaround.xsd`.
 It defines a parent simple type with a simple regex limiting length (`.{1,255}`).
 The workaround validates the specific value much more quickly, because xerces validates the regex patterns on the extension chain, starting with the farest parent, until the first unmatching regex.
 Therefore the regex for the length is evaluated before the not blank regex, and since it fails quickly the other regex won't be evaluated.
+
+WARNING: The validation error will be different for the two xsds.
+The `unsafe.xsd` will report `*cvc-maxLength-valid*` since the value conforms to the not blank regex pattern (`.\*[^\s].\*`) but violates the `maxLength` restriction.
+The `workaround.xsd` will report `*cvc-pattern-valid*` error as the value violates the first regex (`.{1,255}`), therefore it won't be checked against the remaining restrictions.
 
 == Example
 
@@ -197,3 +207,13 @@ UnmarshallStatistics{timeElapsed=3, xmlInput='invalid.xml', xsdPath='xsd/hu/icel
 UnmarshallStatistics{timeElapsed=290, xmlInput='long_string.xml', xsdPath='xsd/hu/icellmobilsoft/pattern/validation/test/dto/workaround.xsd', valid=false}
 
 ----
+
+.Example statistics
+|===
+|Time elapsed (ms) |Xml input |Xsd used for validation |Validation result
+|10 |`valid.xml` |`unsafe.xsd` |VALID
+|6 |`invalid.xml` |`unsafe.xsd` |INVALID
+|226955 |`long_string.xml` |`unsafe.xsd` |INVALID
+|1 |`valid.xml` |`workaround.xsd` |VALID
+|3 |`invalid.xml` |`workaround.xsd` |INVALID
+|290 |`long_string.xml` |`workaround.xsd` |INVALID

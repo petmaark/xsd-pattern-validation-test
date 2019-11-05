@@ -1,9 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!--
-# Projekt: Magyar Online Számla Rendszer invoiceData XML XSD séma
-# Author: NAV Informatikai Intézet
-
-# Version: v1.x
--->
+<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://icellmobilsoft.hu/pattern/validation/test/dto" targetNamespace="http://icellmobilsoft.hu/pattern/validation/test/dto" elementFormDefault="qualified" attributeFormDefault="unqualified">
     <xs:simpleType name="SimpleText255NotBlankType">
         <xs:annotation>
